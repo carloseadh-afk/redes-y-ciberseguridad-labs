@@ -1,0 +1,36 @@
+name: CI y Escaneo de Imagen Docker
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-scan:
+    name: Construir y Escanear Imagen
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Construir la imagen de Docker
+        run: |
+          docker build -t mi-app-docker:latest .
+
+      - name: Escanear imagen con Trivy (SCA de contenedores)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mi-app-docker:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Subir resultados de Trivy a Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
