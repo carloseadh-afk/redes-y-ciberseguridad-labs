@@ -1,0 +1,37 @@
+name: SAST para código Python
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  sast-python:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+    - name: Checkout de código
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Instalar Bandit y formateador SARIF
+      run: |
+        pip install bandit bandit-sarif-formatter
+
+    - name: Analizar con Bandit y generar SARIF
+      run: |
+        bandit -r . -f sarif -o bandit-results.sarif || true
+
+    - name: Subir reporte a GitHub Code Scanning
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: bandit-results.sarif
